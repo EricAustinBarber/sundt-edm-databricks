@@ -1,4 +1,4 @@
-# ci.yml
+﻿# ci.yml
 name: CICD-Databricks
 
 on:
@@ -43,9 +43,6 @@ jobs:
         run: pytest -q
 
   ci_dev:
-    # Run when:
-    # - pushing directly to dev
-    # - creating/updating a PR with base branch = dev
     if: ${{ github.ref_name == 'dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev') }}
     name: ci-dev
     needs: [unit_tests]
@@ -55,8 +52,6 @@ jobs:
       bundle_path: databricks
       target: dev
       environment_name: DataBricks-Dev
-
-      # Dev: validate + deploy + post-deploy verification + smoke
       run_post_deployment_tests: true
       post_deploy_summary_output: both
       run_post_deploy_smoke: true
@@ -67,10 +62,31 @@ jobs:
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       DATABRICKS_SQL_WAREHOUSE_ID: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
 
+  scorecard_dev:
+    if: ${{ github.ref_name == 'dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev') }}
+    name: scorecard-dev
+    needs: [ci_dev]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install just
+        uses: extractions/setup-just@v2
+      - name: Bootstrap + deploy scorecard
+        env:
+          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
+        run: |
+          just scorecard-bootstrap-deploy config="config/sources.template.yaml"
+
   ci_test:
-    # Run when:
-    # - pushing directly to test
-    # - creating/updating a PR with base branch = test
     if: ${{ github.ref_name == 'test' || (github.event_name == 'pull_request' && (github.base_ref == 'test' || github.base_ref == 'prod')) }}
     name: ci-test
     needs: [unit_tests]
@@ -80,17 +96,11 @@ jobs:
       bundle_path: databricks
       target: test
       environment_name: DataBricks-Test
-
-      # Test: validate + deploy + post-deploy verification + smoke + metadata-driven asset validation
       run_post_deployment_tests: true
       post_deploy_summary_output: both
-
-      # Smoke should be part of the bundle (recommended) and invoked via bundle run:
       run_post_deploy_smoke: true
       smoke_mode: bundle-run
       smoke_job_key: smoke
-
-      # Maturity telemetry + warn-only gate in test.
       run_post_deploy_bundle_jobs: true
       post_deploy_bundle_jobs_json: |
         [
@@ -138,15 +148,37 @@ jobs:
             }
           }
         ]
-
       promote_artifact_only: false
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       DATABRICKS_SQL_WAREHOUSE_ID: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
 
+  scorecard_test:
+    if: ${{ github.ref_name == 'test' || (github.event_name == 'pull_request' && (github.base_ref == 'test' || github.base_ref == 'prod')) }}
+    name: scorecard-test
+    needs: [ci_test]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install just
+        uses: extractions/setup-just@v2
+      - name: Bootstrap + deploy scorecard
+        env:
+          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
+        run: |
+          just scorecard-bootstrap-deploy config="config/sources.template.yaml"
+
   cd_prod:
-    # Only run on direct pushes to prod (no PRs). This makes prod a "merge target" from test.
     if: ${{ github.event_name == 'push' && github.ref_name == 'prod' }}
     name: cd-prod
     needs: [unit_tests]
@@ -156,19 +188,37 @@ jobs:
       bundle_path: databricks
       target: prod
       environment_name: DataBricks-Prod
-
-      # Prod: deploy + post-deploy verification + smoke
       run_post_deployment_tests: true
       post_deploy_summary_output: both
-
       run_post_deploy_smoke: true
       smoke_mode: bundle-run
       smoke_job_key: smoke
-
-      # Later, when you have a proper release promotion, set this to true and deploy only
-      # previously-built artifacts.
       promote_artifact_only: false
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       DATABRICKS_SQL_WAREHOUSE_ID: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
+
+  scorecard_prod:
+    if: ${{ github.event_name == 'push' && github.ref_name == 'prod' }}
+    name: scorecard-prod
+    needs: [cd_prod]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install just
+        uses: extractions/setup-just@v2
+      - name: Bootstrap + deploy scorecard
+        env:
+          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
+        run: |
+          just scorecard-bootstrap-deploy config="config/sources.template.yaml"

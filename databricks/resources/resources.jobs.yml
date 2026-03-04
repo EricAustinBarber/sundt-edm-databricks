@@ -12,24 +12,16 @@ resources:
       parameters:
         - name: env
           default: ${bundle.target}
-        - name: catalog
-          default: ${var.quality_catalog}
-        - name: schema_raw
-          default: ${var.quality_schema_raw}
-        - name: schema_staging
-          default: ${var.quality_schema_staging}
-        - name: schema_mart
-          default: ${var.quality_schema_mart}
       tasks:
         - task_key: quality_scorecard_bootstrap
           environment_key: Default
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_bootstrap_notebook
             base_parameters:
-              catalog: "{{job.parameters.catalog}}"
-              schema_raw: "{{job.parameters.schema_raw}}"
-              schema_staging: "{{job.parameters.schema_staging}}"
-              schema_mart: "{{job.parameters.schema_mart}}"
+              catalog: ${var.quality_catalog}
+              schema_bronze: ${var.quality_schema_bronze}
+              schema_silver: ${var.quality_schema_silver}
+              schema_governance: ${var.quality_schema_governance}
         - task_key: quality_scorecard_deploy
           depends_on:
             - task_key: quality_scorecard_bootstrap
@@ -37,10 +29,10 @@ resources:
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_deploy_notebook
             base_parameters:
-              catalog: "{{job.parameters.catalog}}"
-              schema_raw: "{{job.parameters.schema_raw}}"
-              schema_staging: "{{job.parameters.schema_staging}}"
-              schema_mart: "{{job.parameters.schema_mart}}"
+              catalog: ${var.quality_catalog}
+              schema_bronze: ${var.quality_schema_bronze}
+              schema_silver: ${var.quality_schema_silver}
+              schema_governance: ${var.quality_schema_governance}
       environments:
         - environment_key: Default
           spec:

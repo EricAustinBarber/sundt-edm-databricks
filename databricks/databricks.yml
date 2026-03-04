@@ -13,11 +13,11 @@ include:
 variables:
   quality_catalog:
     default: dev
-  quality_schema_raw:
+  quality_schema_bronze:
     default: bronze
-  quality_schema_staging:
+  quality_schema_silver:
     default: silver
-  quality_schema_mart:
+  quality_schema_governance:
     default: governance_mart
 
 permissions:
@@ -29,24 +29,24 @@ targets:
     default: true
     variables:
       quality_catalog: dev
-      quality_schema_raw: bronze
-      quality_schema_staging: silver
-      quality_schema_mart: governance_mart
+      quality_schema_bronze: bronze
+      quality_schema_silver: silver
+      quality_schema_governance: governance_mart
     workspace:
       root_path: /Workspace/Shared/sundt-edm-maturity/dev/${bundle.name}
   test:
     variables:
       quality_catalog: test
-      quality_schema_raw: bronze
-      quality_schema_staging: silver
-      quality_schema_mart: governance_mart
+      quality_schema_bronze: bronze
+      quality_schema_silver: silver
+      quality_schema_governance: governance_mart
     workspace:
       root_path: /Workspace/Shared/sundt-edm-maturity/test/${bundle.name}
   prod:
     variables:
       quality_catalog: prod
-      quality_schema_raw: bronze
-      quality_schema_staging: silver
-      quality_schema_mart: governance_mart
+      quality_schema_bronze: bronze
+      quality_schema_silver: silver
+      quality_schema_governance: governance_mart
     workspace:
       root_path: /Workspace/Shared/sundt-edm-maturity/prod/${bundle.name}

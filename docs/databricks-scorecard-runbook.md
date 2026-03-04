@@ -93,9 +93,9 @@ Quality write location is environment-specific and comes from bundle target
 variables in `databricks/databricks.yml`:
 
 - `quality_catalog`
-- `quality_schema_raw`
-- `quality_schema_staging`
-- `quality_schema_mart`
+- `quality_schema_bronze`
+- `quality_schema_silver`
+- `quality_schema_governance`
 
 Ownership: Data Platform Engineering maintains these values via pull request.
 Production variable changes require release approver sign-off.

@@ -26,16 +26,15 @@ Quality scorecard writes are controlled by bundle target variables in
 `databricks/databricks.yml`:
 
 - `quality_catalog`
-- `quality_schema_raw`
-- `quality_schema_staging`
-- `quality_schema_mart`
+- `quality_schema_bronze`
+- `quality_schema_silver`
+- `quality_schema_governance`
 
 Ownership:
 
 - Data Platform Engineering owns these values in version control.
 - Changes require PR review from platform maintainers and data governance.
 - `prod` changes should only merge alongside an approved release/promotion PR.
-
 ## Deployment model (best practice)
 
 GitHub Actions deploys via Databricks Asset Bundles only. CI/CD is the source of

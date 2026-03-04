@@ -19,9 +19,9 @@ resources:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_bootstrap_notebook
             base_parameters:
               catalog: ${var.quality_catalog}
-              schema_raw: ${var.quality_schema_raw}
-              schema_staging: ${var.quality_schema_staging}
-              schema_mart: ${var.quality_schema_mart}
+              schema_bronze: ${var.quality_schema_bronze}
+              schema_silver: ${var.quality_schema_silver}
+              schema_governance: ${var.quality_schema_governance}
         - task_key: quality_scorecard_deploy
           depends_on:
             - task_key: quality_scorecard_bootstrap
@@ -30,9 +30,9 @@ resources:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_deploy_notebook
             base_parameters:
               catalog: ${var.quality_catalog}
-              schema_raw: ${var.quality_schema_raw}
-              schema_staging: ${var.quality_schema_staging}
-              schema_mart: ${var.quality_schema_mart}
+              schema_bronze: ${var.quality_schema_bronze}
+              schema_silver: ${var.quality_schema_silver}
+              schema_governance: ${var.quality_schema_governance}
       environments:
         - environment_key: Default
           spec:

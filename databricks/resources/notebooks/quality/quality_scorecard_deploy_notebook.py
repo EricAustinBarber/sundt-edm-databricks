@@ -1,18 +1,18 @@
 # Databricks notebook source
 dbutils.widgets.text("catalog", "")
-dbutils.widgets.text("schema_raw", "")
-dbutils.widgets.text("schema_staging", "")
-dbutils.widgets.text("schema_mart", "")
+dbutils.widgets.text("schema_bronze", "")
+dbutils.widgets.text("schema_silver", "")
+dbutils.widgets.text("schema_governance", "")
 
 CATALOG = (dbutils.widgets.get("catalog") or "").strip()
-SCHEMA_RAW = (dbutils.widgets.get("schema_raw") or "").strip()
-SCHEMA_STAGING = (dbutils.widgets.get("schema_staging") or "").strip()
-SCHEMA_MART = (dbutils.widgets.get("schema_mart") or "").strip()
+SCHEMA_BRONZE = (dbutils.widgets.get("schema_bronze") or "").strip()
+SCHEMA_SILVER = (dbutils.widgets.get("schema_silver") or "").strip()
+SCHEMA_GOVERNANCE = (dbutils.widgets.get("schema_governance") or "").strip()
 
-if not CATALOG or not SCHEMA_RAW or not SCHEMA_STAGING or not SCHEMA_MART:
+if not CATALOG or not SCHEMA_BRONZE or not SCHEMA_SILVER or not SCHEMA_GOVERNANCE:
     raise ValueError(
         "Missing required catalog/schema parameters. "
-        "Expected catalog, schema_raw, schema_staging, schema_mart."
+        "Expected catalog, schema_bronze, schema_silver, schema_governance."
     )
 if CATALOG.lower() == "main":
     raise ValueError(
@@ -42,9 +42,9 @@ def _workspace_files_root() -> Path:
 
 def _rewrite_catalog_and_schemas(sql_text: str) -> str:
     rewritten = sql_text
-    rewritten = rewritten.replace("main.raw.", f"{CATALOG}.{SCHEMA_RAW}.")
-    rewritten = rewritten.replace("main.staging.", f"{CATALOG}.{SCHEMA_STAGING}.")
-    rewritten = rewritten.replace("main.mart.", f"{CATALOG}.{SCHEMA_MART}.")
+    rewritten = rewritten.replace("main.raw.", f"{CATALOG}.{SCHEMA_BRONZE}.")
+    rewritten = rewritten.replace("main.staging.", f"{CATALOG}.{SCHEMA_SILVER}.")
+    rewritten = rewritten.replace("main.mart.", f"{CATALOG}.{SCHEMA_GOVERNANCE}.")
     return rewritten
 
 
@@ -95,8 +95,8 @@ dataset_rows = datasets_payload.get("datasets", [])
 if not isinstance(metric_rows, list) or not isinstance(dataset_rows, list):
     raise RuntimeError("Invalid definition JSON payloads. Expected 'metrics' and 'datasets' arrays.")
 
-metric_table = f"{CATALOG}.{SCHEMA_STAGING}.sliver_scorecard_metric_definitions_json"
-dataset_table = f"{CATALOG}.{SCHEMA_STAGING}.sliver_critical_datasets_json"
+metric_table = f"{CATALOG}.{SCHEMA_SILVER}.sliver_scorecard_metric_definitions_json"
+dataset_table = f"{CATALOG}.{SCHEMA_SILVER}.sliver_critical_datasets_json"
 
 metric_count = _replace_json_rows(metric_table, metric_rows)
 dataset_count = _replace_json_rows(dataset_table, dataset_rows)
@@ -111,5 +111,5 @@ for sql_file in sql_files:
 print(
     f"[quality-deploy] complete metrics={metric_count} datasets={dataset_count} "
     f"sql_files={len(sql_files)} sql_statements={statement_count} "
-    f"catalog={CATALOG} raw={SCHEMA_RAW} staging={SCHEMA_STAGING} mart={SCHEMA_MART}"
+    f"catalog={CATALOG} bronze={SCHEMA_BRONZE} silver={SCHEMA_SILVER} governance={SCHEMA_GOVERNANCE}"
 )

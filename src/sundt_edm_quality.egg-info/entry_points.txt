@@ -1,2 +1,0 @@
-[console_scripts]
-sundt-edm-quality = sundt_edm_quality.cli:main

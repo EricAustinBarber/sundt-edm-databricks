@@ -3,6 +3,41 @@
 
 resources:
   jobs:
+    quality_scorecard_deploy:
+      name: quality-scorecard-deploy-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
+      tags:
+        purpose: quality-scorecard
+        environment: ${bundle.target}
+      parameters:
+        - name: env
+          default: ${bundle.target}
+      tasks:
+        - task_key: quality_scorecard_bootstrap
+          environment_key: Default
+          notebook_task:
+            notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_bootstrap_notebook
+            base_parameters:
+              catalog: ${var.quality_catalog}
+              schema_bronze: ${var.quality_schema_bronze}
+              schema_silver: ${var.quality_schema_silver}
+              schema_governance: ${var.quality_schema_governance}
+        - task_key: quality_scorecard_deploy
+          depends_on:
+            - task_key: quality_scorecard_bootstrap
+          environment_key: Default
+          notebook_task:
+            notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_deploy_notebook
+            base_parameters:
+              catalog: ${var.quality_catalog}
+              schema_bronze: ${var.quality_schema_bronze}
+              schema_silver: ${var.quality_schema_silver}
+              schema_governance: ${var.quality_schema_governance}
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
+
     smoke:
       name: smoke-${bundle.target}
       performance_target: PERFORMANCE_OPTIMIZED

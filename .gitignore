@@ -5,3 +5,6 @@ dist/
 build/
 .DS_Store
 *.zip
+*.egg-info/
+src/*.egg-info/
+artifacts/

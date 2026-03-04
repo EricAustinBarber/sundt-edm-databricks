@@ -83,7 +83,22 @@ Update the embedded baseline list in `scorecard_status_loader_notebook.py` and r
 
 ## CI Integration
 
-The `ci-test` workflow runs `maturity-scorecard-status-load-test` and `maturity-scorecard-eval-test` automatically after deploy.
+CI bundle jobs run after deploy:
+
+- `quality-scorecard-deploy-<env>` (bootstrap + definition/SQL deploy)
+- `maturity-scorecard-status-load-<env>`
+- `maturity-scorecard-eval-<env>`
+
+Quality write location is environment-specific and comes from bundle target
+variables in `databricks/databricks.yml`:
+
+- `quality_catalog`
+- `quality_schema_bronze`
+- `quality_schema_silver`
+- `quality_schema_governance`
+
+Ownership: Data Platform Engineering maintains these values via pull request.
+Production variable changes require release approver sign-off.
 
 ## Evidence Stub Notebook
 

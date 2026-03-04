@@ -108,11 +108,7 @@ jobs:
   ci_dev:
     if: ${{ github.ref_name == 'dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev') }}
     name: ci-dev
-<<<<<<< HEAD
     needs: [unit_tests, bundle_validate_dev]
-=======
-    needs: [unit_tests]
->>>>>>> origin/prod
     uses: EricAustinBarber/sundt-edm-cicd-platform/.github/workflows/reusable-databricks.yml@81cdf941de0fae03687fe5cc7bba08c3501dd183
     with:
       mode: ci-dev
@@ -157,11 +153,7 @@ jobs:
   ci_test:
     if: ${{ github.ref_name == 'test' || (github.event_name == 'pull_request' && (github.base_ref == 'test' || github.base_ref == 'prod')) }}
     name: ci-test
-<<<<<<< HEAD
     needs: [unit_tests, bundle_validate_test]
-=======
-    needs: [unit_tests]
->>>>>>> origin/prod
     uses: EricAustinBarber/sundt-edm-cicd-platform/.github/workflows/reusable-databricks.yml@81cdf941de0fae03687fe5cc7bba08c3501dd183
     with:
       mode: ci-test
@@ -235,11 +227,7 @@ jobs:
   cd_prod:
     if: ${{ github.event_name == 'push' && github.ref_name == 'prod' }}
     name: cd-prod
-<<<<<<< HEAD
     needs: [unit_tests, bundle_validate_prod]
-=======
-    needs: [unit_tests]
->>>>>>> origin/prod
     uses: EricAustinBarber/sundt-edm-cicd-platform/.github/workflows/reusable-databricks.yml@81cdf941de0fae03687fe5cc7bba08c3501dd183
     with:
       mode: cd-prod

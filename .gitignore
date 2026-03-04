@@ -8,5 +8,3 @@ build/
 *.egg-info/
 src/*.egg-info/
 artifacts/
-*.egg-info/
-src/*.egg-info/

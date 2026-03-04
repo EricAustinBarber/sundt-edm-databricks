@@ -42,10 +42,73 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
 
+  bundle_validate_dev:
+    if: ${{ github.ref_name == 'dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev') }}
+    name: bundle-validate-dev
+    needs: [unit_tests]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.277.0
+        with:
+          version: 0.277.0
+      - name: Validate bundle (dev)
+        working-directory: databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate -t dev
+
+  bundle_validate_test:
+    if: ${{ github.ref_name == 'test' || (github.event_name == 'pull_request' && (github.base_ref == 'test' || github.base_ref == 'prod')) }}
+    name: bundle-validate-test
+    needs: [unit_tests]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.277.0
+        with:
+          version: 0.277.0
+      - name: Validate bundle (test)
+        working-directory: databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate -t test
+
+  bundle_validate_prod:
+    if: ${{ github.event_name == 'push' && github.ref_name == 'prod' }}
+    name: bundle-validate-prod
+    needs: [unit_tests]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.277.0
+        with:
+          version: 0.277.0
+      - name: Validate bundle (prod)
+        working-directory: databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate -t prod
+
   ci_dev:
     if: ${{ github.ref_name == 'dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev') }}
     name: ci-dev
-    needs: [unit_tests]
+    needs: [unit_tests, bundle_validate_dev]
     uses: EricAustinBarber/sundt-edm-cicd-platform/.github/workflows/reusable-databricks.yml@81cdf941de0fae03687fe5cc7bba08c3501dd183
     with:
       mode: ci-dev
@@ -90,7 +153,7 @@ jobs:
   ci_test:
     if: ${{ github.ref_name == 'test' || (github.event_name == 'pull_request' && (github.base_ref == 'test' || github.base_ref == 'prod')) }}
     name: ci-test
-    needs: [unit_tests]
+    needs: [unit_tests, bundle_validate_test]
     uses: EricAustinBarber/sundt-edm-cicd-platform/.github/workflows/reusable-databricks.yml@81cdf941de0fae03687fe5cc7bba08c3501dd183
     with:
       mode: ci-test
@@ -164,7 +227,7 @@ jobs:
   cd_prod:
     if: ${{ github.event_name == 'push' && github.ref_name == 'prod' }}
     name: cd-prod
-    needs: [unit_tests]
+    needs: [unit_tests, bundle_validate_prod]
     uses: EricAustinBarber/sundt-edm-cicd-platform/.github/workflows/reusable-databricks.yml@81cdf941de0fae03687fe5cc7bba08c3501dd183
     with:
       mode: cd-prod

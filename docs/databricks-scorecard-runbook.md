@@ -89,6 +89,17 @@ CI bundle jobs run after deploy:
 - `maturity-scorecard-status-load-<env>`
 - `maturity-scorecard-eval-<env>`
 
+Quality write location is environment-specific and comes from bundle target
+variables in `databricks/databricks.yml`:
+
+- `quality_catalog`
+- `quality_schema_raw`
+- `quality_schema_staging`
+- `quality_schema_mart`
+
+Ownership: Data Platform Engineering maintains these values via pull request.
+Production variable changes require release approver sign-off.
+
 ## Evidence Stub Notebook
 
 Use `scorecard_evidence_stub_notebook.py` to prototype evidence-derived statuses without enforcing gates. Set `write_mode=append` only when you are ready to persist results.

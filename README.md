@@ -20,6 +20,22 @@ Create these environments in GitHub UI (`Settings -> Environments`):
 - `DataBricks-Test`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`, `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLUSTER_ID`
 - `DataBricks-Prod`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`, `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLUSTER_ID` (with required approvers)
 
+## Quality Environment Variables (bundle targets)
+
+Quality scorecard writes are controlled by bundle target variables in
+`databricks/databricks.yml`:
+
+- `quality_catalog`
+- `quality_schema_raw`
+- `quality_schema_staging`
+- `quality_schema_mart`
+
+Ownership:
+
+- Data Platform Engineering owns these values in version control.
+- Changes require PR review from platform maintainers and data governance.
+- `prod` changes should only merge alongside an approved release/promotion PR.
+
 ## Deployment model (best practice)
 
 GitHub Actions deploys via Databricks Asset Bundles only. CI/CD is the source of

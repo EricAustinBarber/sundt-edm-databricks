@@ -1,6 +1,6 @@
-# Promotion Demo Runbook (dev -> test -> prod)
+# Promotion Runbook (dev -> test -> prod)
 
-Use this runbook to drive `SUNDT_DW_CICD_EXAMPLE` through build, test, and deployment using the reusable platform workflow.
+Use this runbook to promote changes through build, test, and production using the reusable platform workflow.
 
 ## Preconditions
 
@@ -19,7 +19,7 @@ Use this runbook to drive `SUNDT_DW_CICD_EXAMPLE` through build, test, and deplo
 ## Phase 1: Build + Dev Deploy
 
 1. Create a feature branch from `dev`.
-2. Make a small code change (for example `src/example.py`).
+2. Make a small code change (for example a notebook or job definition).
 3. Open PR to `dev`.
 4. Verify pipeline result:
    - `unit-tests` passes

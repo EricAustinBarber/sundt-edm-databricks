@@ -69,6 +69,8 @@ Tracked in `C:\Users\eabarber\CodeX\EnterpriseDataMaturity\assessments\assessmen
 - Update the scorecard after each remediation sprint or quarterly at minimum.
 - Evidence refresh should include updated notebook inventory and targeted manual reviews for the `Partial` checks.
 
-## Canonical CSV Definition
+## Canonical Definition
 
-- `docs/databricks-environment-scorecard.csv` is the canonical scorecard definition used by the evaluation notebook.
+The canonical scorecard definition is embedded in
+`databricks/resources/notebooks/maturity/scorecard_evaluation_notebook.py`.
+Keep this document aligned with the embedded list.

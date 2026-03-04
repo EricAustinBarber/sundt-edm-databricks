@@ -1,8 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "sundt-example-consuming-repo"
+name = "sundt-edm-quality"
 version = "0.1.0"
-requires-python = ">=3.9"
-dependencies = []
+description = "Data quality evidence collector for Bigeye + Alation + Databricks publish"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+  "PyYAML>=6.0",
+  "requests>=2.31.0",
+  "databricks-sql-connector>=3.0.0",
+]
+
+[project.scripts]
+sundt-edm-quality = "sundt_edm_quality.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

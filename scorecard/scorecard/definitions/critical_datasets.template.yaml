@@ -1,0 +1,25 @@
+version: 1
+description: Critical dataset inventory template used for scorecard weighting and ownership.
+
+datasets:
+  - dataset_id: DS001
+    dataset_name: example_sales_orders
+    domain_name: sales
+    business_owner: owner@example.com
+    technical_owner: tech_owner@example.com
+    criticality: H
+    sla_freshness: daily
+    contains_pii: false
+    is_active: true
+    notes: replace with production dataset
+
+  - dataset_id: DS002
+    dataset_name: example_customer_master
+    domain_name: customer
+    business_owner: owner@example.com
+    technical_owner: tech_owner@example.com
+    criticality: H
+    sla_freshness: hourly
+    contains_pii: true
+    is_active: true
+    notes: replace with production dataset

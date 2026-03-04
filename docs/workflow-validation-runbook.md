@@ -2,7 +2,7 @@
 
 Use this runbook to execute one end-to-end validation in `dev` and `test`.
 
-For full promotion through production, use `docs/promotion-demo-runbook.md`.
+For full promotion through production, use `docs/promotion-runbook.md`.
 
 ## Prerequisites
 

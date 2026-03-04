@@ -1,0 +1,40 @@
+version: 1
+
+bigeye:
+  base_url: "https://app.bigeye.com"
+  endpoints:
+    monitors: "/monitors"
+    alerts: "/alerts"
+  endpoint_candidates:
+    - "/api/v1/monitors"
+    - "/api/v1/alerts"
+    - "/api/login"
+    - "/api/v1/login"
+    - "/api/session"
+    - "/monitors"
+    - "/alerts"
+    - "/status"
+  timeout_seconds: 60
+
+alation:
+  base_url: "https://sundt.alationcloud.com/"
+  endpoints:
+    assets: "/integration/v2/table"
+  endpoint_candidates:
+    - "/integration/v2/table"
+    - "/integration/v1/table"
+    - "/api/v1/table"
+    - "/api/v1/schema"
+    - "/integration/v1/search"
+    - "/api/v1/user"
+    - "/api/v1/assets"
+  timeout_seconds: 60
+
+databricks:
+  catalog: "main"
+  schema_raw: "raw"
+  schema_staging: "staging"
+  table_bigeye_monitors_json: "bigeye_monitors_json"
+  table_bigeye_alerts_json: "bigeye_alerts_json"
+  table_alation_assets_json: "alation_assets_json"
+  table_dataset_quality_seed: "dataset_quality_360_seed"

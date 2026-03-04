@@ -1,4 +1,4 @@
-# Branch Protection Checklist (SUNDT_DW_CICD_EXAMPLE)
+# Branch Protection Checklist (Sundt EDM Databricks Maturity)
 
 Use this checklist to enforce safe promotion from `dev` -> `test` -> `prod`.
 

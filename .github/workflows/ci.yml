@@ -14,6 +14,12 @@ on:
         default: "none"
         type: choice
         options: [none, warn_only, skip]
+      force_lock:
+        description: "Emergency prod deploy only: use --force-lock during bundle deploy"
+        required: false
+        default: "false"
+        type: choice
+        options: [false, true]
 
 permissions:
   contents: read
@@ -269,3 +275,31 @@ jobs:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       DATABRICKS_SQL_WAREHOUSE_ID: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
+
+  cd_prod_force_lock:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'prod' && github.event.inputs.force_lock == 'true' }}
+    name: cd-prod-force-lock
+    needs: [unit_tests]
+    runs-on: ubuntu-latest
+    environment: DataBricks-Prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.277.0
+        with:
+          version: 0.277.0
+      - name: Validate bundle (prod)
+        working-directory: databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate -t prod
+      - name: Deploy bundle with force lock (prod)
+        working-directory: databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle deploy -t prod --force-lock

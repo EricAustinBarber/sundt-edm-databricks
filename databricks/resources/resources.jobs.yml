@@ -3,23 +3,72 @@
 
 resources:
   jobs:
+    quality_scorecard_deploy:
+      name: quality-scorecard-deploy-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
+      tags:
+        purpose: quality-scorecard
+        environment: ${bundle.target}
+      parameters:
+        - name: env
+          default: ${bundle.target}
+        - name: catalog
+          default: ${var.quality_catalog}
+        - name: schema_raw
+          default: ${var.quality_schema_raw}
+        - name: schema_staging
+          default: ${var.quality_schema_staging}
+        - name: schema_mart
+          default: ${var.quality_schema_mart}
+      tasks:
+        - task_key: quality_scorecard_bootstrap
+          environment_key: Default
+          notebook_task:
+            notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_bootstrap_notebook
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema_raw: "{{job.parameters.schema_raw}}"
+              schema_staging: "{{job.parameters.schema_staging}}"
+              schema_mart: "{{job.parameters.schema_mart}}"
+        - task_key: quality_scorecard_deploy
+          depends_on:
+            - task_key: quality_scorecard_bootstrap
+          environment_key: Default
+          notebook_task:
+            notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_deploy_notebook
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema_raw: "{{job.parameters.schema_raw}}"
+              schema_staging: "{{job.parameters.schema_staging}}"
+              schema_mart: "{{job.parameters.schema_mart}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
+
     smoke:
       name: smoke-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
       tags:
         purpose: ci-smoke
         environment: ${bundle.target}
       tasks:
         - task_key: smoke_notebook
           description: Lightweight smoke test to validate compute-plane execution
-          existing_cluster_id: ${var.validation_cluster_id}
+          environment_key: Default
           notebook_task:
             # Notebook is deployed with the bundle under the workspace root.
             notebook_path: ${workspace.root_path}/files/resources/notebooks/smoke_tests/notebook_smoke_test
             base_parameters:
               env: ${bundle.target}
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
 
     maturity_collect:
       name: maturity-collect-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
       tags:
         purpose: maturity-telemetry
         environment: ${bundle.target}
@@ -40,7 +89,7 @@ resources:
           default: ${bundle.name}
       tasks:
         - task_key: maturity_collect
-          existing_cluster_id: ${var.validation_cluster_id}
+          environment_key: Default
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/maturity/maturity_collector_notebook
             base_parameters:
@@ -51,9 +100,14 @@ resources:
               git_ref: "{{job.parameters.git_ref}}"
               workflow_run_id: "{{job.parameters.workflow_run_id}}"
               bundle_name: "{{job.parameters.bundle_name}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
 
     maturity_ci_check:
       name: maturity-ci-check-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
       tags:
         purpose: maturity-gate
         environment: ${bundle.target}
@@ -66,16 +120,21 @@ resources:
           default: "none"
       tasks:
         - task_key: maturity_ci_check
-          existing_cluster_id: ${var.validation_cluster_id}
+          environment_key: Default
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/maturity/maturity_ci_check_notebook
             base_parameters:
               env: "{{job.parameters.env}}"
               enforcement_mode: "{{job.parameters.enforcement_mode}}"
               maturity_override: "{{job.parameters.maturity_override}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
 
     maturity_scorecard_eval:
       name: maturity-scorecard-eval-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
       tags:
         purpose: maturity-scorecard
         environment: ${bundle.target}
@@ -86,27 +145,26 @@ resources:
           default: ""
         - name: commit_sha
           default: ${bundle.git.commit}
-        - name: scorecard_source
-          default: "embedded"
-        - name: scorecard_path
-          default: file:${workspace.root_path}/files/resources/scorecard/databricks-environment-scorecard.csv
         - name: status_json
           default: ""
       tasks:
         - task_key: maturity_scorecard_eval
-          existing_cluster_id: ${var.validation_cluster_id}
+          environment_key: Default
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/maturity/scorecard_evaluation_notebook
             base_parameters:
               env: "{{job.parameters.env}}"
               run_id: "{{job.parameters.run_id}}"
               commit_sha: "{{job.parameters.commit_sha}}"
-              scorecard_source: "{{job.parameters.scorecard_source}}"
-              scorecard_path: "{{job.parameters.scorecard_path}}"
               status_json: "{{job.parameters.status_json}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
 
     maturity_scorecard_evidence_stub:
       name: maturity-scorecard-evidence-stub-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
       tags:
         purpose: maturity-scorecard
         environment: ${bundle.target}
@@ -121,7 +179,7 @@ resources:
           default: "evidence_stub"
       tasks:
         - task_key: maturity_scorecard_evidence_stub
-          existing_cluster_id: ${var.validation_cluster_id}
+          environment_key: Default
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/maturity/scorecard_evidence_stub_notebook
             base_parameters:
@@ -129,9 +187,14 @@ resources:
               status_source_path: "{{job.parameters.status_source_path}}"
               write_mode: "{{job.parameters.write_mode}}"
               updated_by: "{{job.parameters.updated_by}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
 
     maturity_scorecard_status_load:
       name: maturity-scorecard-status-load-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
       tags:
         purpose: maturity-scorecard
         environment: ${bundle.target}
@@ -142,9 +205,13 @@ resources:
           default: "bundle"
       tasks:
         - task_key: maturity_scorecard_status_load
-          existing_cluster_id: ${var.validation_cluster_id}
+          environment_key: Default
           notebook_task:
             notebook_path: ${workspace.root_path}/files/resources/notebooks/maturity/scorecard_status_loader_notebook
             base_parameters:
               env: "{{job.parameters.env}}"
               updated_by: "{{job.parameters.updated_by}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"

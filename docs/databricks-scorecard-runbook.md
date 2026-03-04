@@ -83,7 +83,11 @@ Update the embedded baseline list in `scorecard_status_loader_notebook.py` and r
 
 ## CI Integration
 
-The `ci-test` workflow runs `maturity-scorecard-status-load-test` and `maturity-scorecard-eval-test` automatically after deploy.
+CI bundle jobs run after deploy:
+
+- `quality-scorecard-deploy-<env>` (bootstrap + definition/SQL deploy)
+- `maturity-scorecard-status-load-<env>`
+- `maturity-scorecard-eval-<env>`
 
 ## Evidence Stub Notebook
 

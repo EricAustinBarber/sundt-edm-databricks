@@ -1,23 +1,41 @@
-# Sundt EDM Databricks Maturity
+﻿# Sundt EDM Databricks Maturity (Extending to Quality)
 
 This repository is the production Databricks Asset Bundle (DAB) for assessing
-and tracking Databricks environment maturity. It deploys maturity jobs and
-notebooks, runs CI/CD validation, and stores scorecard outputs in Delta tables.
+and tracking Databricks environment maturity. It now also includes the
+`sundt-edm-quality` toolchain for Bigeye + Alation + Databricks scorecarding.
 
 ## What this repo provides
 
 - Bundle-managed Databricks jobs and notebooks under `databricks/`
 - CI/CD workflows that validate, deploy, and run post-deploy maturity checks
-- Embedded scorecard definition used by the evaluation notebook
+- Quality ingestion and scorecard deploy tooling under `src/sundt_edm_quality/`
+- YAML/SQL/PySpark scorecard assets under `scorecard/`
 - Runbooks for workflow validation and promotion
 
 ## Required GitHub Environments (in this repo)
 
 Create these environments in GitHub UI (`Settings -> Environments`):
 
-- `DataBricks-Dev`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`
-- `DataBricks-Test`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`
-- `DataBricks-Prod`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID` (with required approvers)
+- `DataBricks-Dev`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`, `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLUSTER_ID`
+- `DataBricks-Test`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`, `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLUSTER_ID`
+- `DataBricks-Prod`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`, `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLUSTER_ID` (with required approvers)
+
+## Deployment model (best practice)
+
+GitHub Actions deploys via Databricks Asset Bundles only. CI/CD is the source of
+truth for environment deployment:
+
+1. Validate and deploy bundle to the target (`dev`, `test`, `prod`)
+2. Run post-deploy smoke and scorecard bundle jobs in Databricks
+
+This keeps deployment logic inside the bundle contract and avoids runner-local
+or ad hoc deploy steps.
+
+For local development only, you can still run:
+
+```bash
+just scorecard-bootstrap-deploy config/sources.template.yaml
+```
 
 ## Notes
 

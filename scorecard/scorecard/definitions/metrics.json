@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "description": "Dataset-level quality score definitions for Bigeye + Alation.",
+  "metrics": [
+    {
+      "metric_id": "OBS_MONITOR_COVERAGE",
+      "metric_name": "bigeye_monitor_coverage",
+      "section": "observability",
+      "weight": 20,
+      "formula": "monitored_dataset_flag * 100",
+      "threshold_green": ">=95",
+      "threshold_yellow": ">=80",
+      "threshold_red": "<80",
+      "owner_team": "Data Governance",
+      "description": "Dataset has at least one active Bigeye monitor."
+    },
+    {
+      "metric_id": "OBS_ALERT_HEALTH",
+      "metric_name": "bigeye_alert_health",
+      "section": "observability",
+      "weight": 20,
+      "formula": "case when alert_count_7d = 0 then 100 when alert_count_7d <= 3 then 85 else 60 end",
+      "threshold_green": ">=90",
+      "threshold_yellow": ">=75",
+      "threshold_red": "<75",
+      "owner_team": "Data Engineering",
+      "description": "Recent alert volume as reliability signal."
+    },
+    {
+      "metric_id": "GOV_ENDORSEMENT",
+      "metric_name": "alation_endorsed",
+      "section": "governance",
+      "weight": 20,
+      "formula": "case when alation_endorsed then 100 else 40 end",
+      "threshold_green": ">=90",
+      "threshold_yellow": ">=75",
+      "threshold_red": "<75",
+      "owner_team": "Data Governance",
+      "description": "Dataset endorsed/certified in Alation."
+    },
+    {
+      "metric_id": "GOV_OWNERSHIP",
+      "metric_name": "alation_owner_steward_completeness",
+      "section": "governance",
+      "weight": 20,
+      "formula": "case when alation_owner is not null and alation_steward is not null then 100 when alation_owner is not null or alation_steward is not null then 70 else 30 end",
+      "threshold_green": ">=90",
+      "threshold_yellow": ">=75",
+      "threshold_red": "<75",
+      "owner_team": "Data Governance",
+      "description": "Dataset has both owner and steward metadata."
+    },
+    {
+      "metric_id": "GOV_LINEAGE",
+      "metric_name": "alation_lineage_coverage",
+      "section": "governance",
+      "weight": 20,
+      "formula": "case when alation_lineage_present then 100 else 50 end",
+      "threshold_green": ">=90",
+      "threshold_yellow": ">=75",
+      "threshold_red": "<75",
+      "owner_team": "Data Governance",
+      "description": "Lineage is present for dataset in Alation."
+    }
+  ]
+}

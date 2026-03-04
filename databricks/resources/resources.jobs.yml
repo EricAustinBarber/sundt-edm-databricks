@@ -3,6 +3,49 @@
 
 resources:
   jobs:
+    quality_scorecard_deploy:
+      name: quality-scorecard-deploy-${bundle.target}
+      performance_target: PERFORMANCE_OPTIMIZED
+      tags:
+        purpose: quality-scorecard
+        environment: ${bundle.target}
+      parameters:
+        - name: env
+          default: ${bundle.target}
+        - name: catalog
+          default: ${var.quality_catalog}
+        - name: schema_raw
+          default: ${var.quality_schema_raw}
+        - name: schema_staging
+          default: ${var.quality_schema_staging}
+        - name: schema_mart
+          default: ${var.quality_schema_mart}
+      tasks:
+        - task_key: quality_scorecard_bootstrap
+          environment_key: Default
+          notebook_task:
+            notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_bootstrap_notebook
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema_raw: "{{job.parameters.schema_raw}}"
+              schema_staging: "{{job.parameters.schema_staging}}"
+              schema_mart: "{{job.parameters.schema_mart}}"
+        - task_key: quality_scorecard_deploy
+          depends_on:
+            - task_key: quality_scorecard_bootstrap
+          environment_key: Default
+          notebook_task:
+            notebook_path: ${workspace.root_path}/files/resources/notebooks/quality/quality_scorecard_deploy_notebook
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema_raw: "{{job.parameters.schema_raw}}"
+              schema_staging: "{{job.parameters.schema_staging}}"
+              schema_mart: "{{job.parameters.schema_mart}}"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
+
     smoke:
       name: smoke-${bundle.target}
       performance_target: PERFORMANCE_OPTIMIZED

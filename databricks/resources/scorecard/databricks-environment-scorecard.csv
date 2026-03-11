@@ -1,0 +1,11 @@
+check_id,dimension,check,weight,pass_criteria,evidence_source
+DBX-01,Standards,Notebook parameterization by environment and source object,6,Parameterization is standard across notebooks (widgets or equivalent) with minimal exceptions documented,assessments/databricks-transformation-review.md
+DBX-02,Standards,Delta tables used for curated layers,7,Curated layers consistently use Delta tables; exceptions documented,assessments/databricks-transformation-review.md
+DBX-03,Standards,Incremental pipelines use deterministic merge/upsert,8,Merge/upsert patterns are standard for incremental loads with coverage mapped by dataset,assessments/databricks-transformation-review.md
+DBX-04,Standards,Data sanitization rules explicitly coded and tested,7,Sanitization rules exist per domain and are validated/tested,assessments/databricks-transformation-review.md
+DBX-05,Performance,Table hygiene tasks defined and executed,12,OPTIMIZE/VACUUM coverage mapped to all large/critical tables with defined cadence,assessments/databricks-transformation-review.md
+DBX-06,Performance,Partitioning/clustering documented for large tables,10,Partitioning/clustering standards exist and are applied to all large/critical tables,assessments/databricks-transformation-review.md
+DBX-07,Performance,File-size thresholds and compaction strategy present,18,Explicit file-size policy and compaction thresholds defined and enforced,assessments/databricks-transformation-review.md
+DBX-08,Reliability,Error handling and retry/idempotency patterns present,7,Standardized retry/idempotency utilities are used by all production jobs,assessments/databricks-transformation-review.md
+DBX-09,Security,Secrets accessed securely (Key Vault/secret scopes),20,All secrets retrieved via secret scopes or Key Vault; no literal credentials,assessments/databricks-transformation-review.md
+DBX-10,Observability,Observability hooks and logging included in jobs,5,Job-level logging/metrics are standardized and mapped to all production jobs,assessments/databricks-transformation-review.md

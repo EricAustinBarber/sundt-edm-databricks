@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from databricks import sql as dbsql
+try:
+    from databricks import sql as dbsql
+except Exception:  # noqa: BLE001
+    dbsql = None
 
 from sundt_edm_quality.config import AppConfig
 
@@ -421,6 +424,10 @@ def generate_reports(
     databricks_env: str,
     top_n: int = 10,
 ) -> dict[str, Any]:
+    if dbsql is None:
+        raise ImportError(
+            "databricks-sql-connector is required for generate_reports; install the databricks SQL connector"
+        )
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 

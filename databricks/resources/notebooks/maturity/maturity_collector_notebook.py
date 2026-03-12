@@ -25,6 +25,11 @@ SMALL_FILE_AVG_BYTES = 32 * 1024 * 1024
 OVERSIZED_FILE_AVG_BYTES = 1024 * 1024 * 1024
 LARGE_JOIN_RUNTIME_MS = 120000
 OPTIMIZE_LOOKBACK_DAYS = 90
+LONG_QUERY_RUNTIME_MS = 300000
+LARGE_SCAN_BYTES = 50 * 1024 * 1024 * 1024
+HIGH_SCAN_TO_OUTPUT_RATIO = 50.0
+HIGH_SHUFFLE_BYTES = 10 * 1024 * 1024 * 1024
+HIGH_SPILL_BYTES = 2 * 1024 * 1024 * 1024
 
 spark.sql("CREATE SCHEMA IF NOT EXISTS governance_maturity")
 
@@ -474,6 +479,222 @@ metric_catalog = [
         "threshold_unit": "seconds",
         "alias_of": "WH-11",
     },
+    {
+        "metric_id": "CC-10",
+        "dimension": "Cost Control",
+        "metric_name": "large_table_count",
+        "description": "Count of large tables in the warehouse.",
+        "why_it_matters": "Large tables dominate compute and storage costs.",
+        "how_to_measure": "Count tables with sizeInBytes above the large table threshold.",
+        "improvement_signal": "Prioritize optimization and layout work on these tables.",
+        "source_name": "DESCRIBE DETAIL",
+        "collection_method": "table_profile_scan",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 200.0,
+        "partial_threshold": 400.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-11",
+        "dimension": "Cost Control",
+        "metric_name": "non_delta_table_count",
+        "description": "Count of non-Delta tables in the warehouse.",
+        "why_it_matters": "Non-Delta tables miss optimization features and can increase cost.",
+        "how_to_measure": "Count tables whose format is not Delta.",
+        "improvement_signal": "Migrate high-value non-Delta tables to Delta.",
+        "source_name": "DESCRIBE DETAIL",
+        "collection_method": "table_profile_scan",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 10.0,
+        "partial_threshold": 50.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-12",
+        "dimension": "Cost Control",
+        "metric_name": "large_tables_without_partition_count",
+        "description": "Count of large tables without partition columns.",
+        "why_it_matters": "Large unpartitioned tables drive expensive scans.",
+        "how_to_measure": "Inspect partitionColumns in DESCRIBE DETAIL for large tables.",
+        "improvement_signal": "Add partitioning or clustering to large tables.",
+        "source_name": "DESCRIBE DETAIL",
+        "collection_method": "table_profile_scan",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 20.0,
+        "partial_threshold": 60.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-13",
+        "dimension": "Cost Control",
+        "metric_name": "large_tables_missing_optimize_count",
+        "description": "Count of large Delta tables without recent OPTIMIZE usage.",
+        "why_it_matters": "Large tables without OPTIMIZE accumulate file overhead and cost.",
+        "how_to_measure": "Review DESCRIBE HISTORY for OPTIMIZE in the lookback window.",
+        "improvement_signal": "Schedule OPTIMIZE for large Delta tables.",
+        "source_name": "DESCRIBE HISTORY",
+        "collection_method": "table_history_scan",
+        "implementation_status": "implemented_best_effort",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 20.0,
+        "partial_threshold": 60.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-14",
+        "dimension": "Cost Control",
+        "metric_name": "p95_query_runtime_seconds_30d",
+        "description": "P95 query runtime in seconds over the last 30 days.",
+        "why_it_matters": "Longer queries drive higher compute utilization.",
+        "how_to_measure": "Use query history duration statistics.",
+        "improvement_signal": "Tune the slowest queries and data layout.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 60.0,
+        "partial_threshold": 180.0,
+        "threshold_unit": "seconds",
+    },
+    {
+        "metric_id": "CC-15",
+        "dimension": "Cost Control",
+        "metric_name": "high_scan_bytes_query_count_30d",
+        "description": "Count of queries that scanned above the large-scan threshold.",
+        "why_it_matters": "Large scans are a direct driver of compute cost.",
+        "how_to_measure": "Use query history scan bytes when available.",
+        "improvement_signal": "Partition and optimize tables to reduce scan volume.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_best_effort",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 50.0,
+        "partial_threshold": 150.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-16",
+        "dimension": "Cost Control",
+        "metric_name": "high_scan_to_output_ratio_query_count_30d",
+        "description": "Count of queries with scan-to-output ratios above the threshold.",
+        "why_it_matters": "High scan-to-output ratios indicate wasted I/O.",
+        "how_to_measure": "Use query history scan and output bytes when available.",
+        "improvement_signal": "Reduce scans with pruning and column projection.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_best_effort",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 30.0,
+        "partial_threshold": 100.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-17",
+        "dimension": "Cost Control",
+        "metric_name": "spill_to_disk_query_count_30d",
+        "description": "Count of queries with high spill-to-disk usage.",
+        "why_it_matters": "Spill indicates memory pressure and expensive shuffles.",
+        "how_to_measure": "Use spill bytes from query history when available.",
+        "improvement_signal": "Reduce shuffle and memory pressure in heavy queries.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_best_effort",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 10.0,
+        "partial_threshold": 30.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-18",
+        "dimension": "Cost Control",
+        "metric_name": "high_shuffle_bytes_query_count_30d",
+        "description": "Count of queries with high shuffle bytes.",
+        "why_it_matters": "High shuffle volume is a key compute cost driver.",
+        "how_to_measure": "Use shuffle bytes from query history when available.",
+        "improvement_signal": "Reduce shuffle with better join strategies and layout.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_best_effort",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 10.0,
+        "partial_threshold": 30.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-19",
+        "dimension": "Cost Control",
+        "metric_name": "select_star_query_ratio_pct_30d",
+        "description": "Percent of queries using SELECT * patterns.",
+        "why_it_matters": "SELECT * increases scan volume and compute cost.",
+        "how_to_measure": "Parse query history for SELECT * and divide by total queries.",
+        "improvement_signal": "Use explicit column projection.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 5.0,
+        "partial_threshold": 15.0,
+        "threshold_unit": "percent",
+    },
+    {
+        "metric_id": "CC-20",
+        "dimension": "Cost Control",
+        "metric_name": "broadcast_join_ratio_pct_30d",
+        "description": "Percent of join queries that used broadcast hints.",
+        "why_it_matters": "Broadcast can reduce shuffle cost when used appropriately.",
+        "how_to_measure": "Parse query history for broadcast hints and join patterns.",
+        "improvement_signal": "Tune joins where broadcast is appropriate.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "high",
+        "pass_threshold": 10.0,
+        "partial_threshold": 3.0,
+        "threshold_unit": "percent",
+    },
+    {
+        "metric_id": "CC-21",
+        "dimension": "Cost Control",
+        "metric_name": "write_workload_count_30d",
+        "description": "Count of write workloads observed in query history.",
+        "why_it_matters": "Baseline workload volume helps normalize cost signals.",
+        "how_to_measure": "Count write-pattern queries in query history.",
+        "improvement_signal": "Use as a baseline for per-workload cost trends.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 999999.0,
+        "partial_threshold": 999999.0,
+        "threshold_unit": "count",
+    },
 ]
 
 
@@ -701,6 +922,68 @@ def collect_table_profile_metric(metric: dict):
         notes = f"{optimized} of {observed} large Delta tables showed recent OPTIMIZE; history unavailable for {unavailable}"
         return metric_row(metric, metric_value_double=float(value), notes=notes, metric_sql="DESCRIBE HISTORY scan", metric_json={"candidate_tables": len(candidates), "observed_tables": observed, "optimized_tables": optimized, "history_unavailable": unavailable})
 
+    if metric["metric_id"] == "CC-10":
+        large = large_tables()
+        return metric_row(
+            metric,
+            metric_value_double=float(len(large)),
+            notes=f"{len(large)} large tables above {int(LARGE_TABLE_BYTES / (1024 * 1024 * 1024))} GB",
+            metric_sql="DESCRIBE DETAIL inventory scan",
+            metric_json={"large_table_count": len(large)},
+        )
+
+    if metric["metric_id"] == "CC-11":
+        profiled = profiled_tables()
+        non_delta = [profile for profile in profiled if profile["format"] != "delta"]
+        return metric_row(
+            metric,
+            metric_value_double=float(len(non_delta)),
+            notes=f"{len(non_delta)} of {len(profiled)} tables are non-Delta",
+            metric_sql="DESCRIBE DETAIL inventory scan",
+            metric_json={"non_delta_count": len(non_delta), "profiled_tables": len(profiled)},
+        )
+
+    if metric["metric_id"] == "CC-12":
+        large = large_tables()
+        without_partition = [profile for profile in large if profile["partition_column_count"] == 0]
+        return metric_row(
+            metric,
+            metric_value_double=float(len(without_partition)),
+            notes=f"{len(without_partition)} of {len(large)} large tables lack partition columns",
+            metric_sql="DESCRIBE DETAIL inventory scan",
+            metric_json={"large_tables": len(large), "without_partition": len(without_partition)},
+        )
+
+    if metric["metric_id"] == "CC-13":
+        candidates = large_delta_tables()
+        if not candidates:
+            return unknown_metric_row(metric, "No large Delta tables found for OPTIMIZE inspection", "DESCRIBE HISTORY scan")
+        optimized = 0
+        unavailable = 0
+        for profile in candidates:
+            try:
+                history = spark.sql(f"DESCRIBE HISTORY {profile['full_name']}")
+                recent = history.filter(
+                    (F.col("timestamp") >= F.current_timestamp() - F.expr(f"INTERVAL {OPTIMIZE_LOOKBACK_DAYS} DAYS"))
+                    & (F.upper(F.col("operation")) == "OPTIMIZE")
+                )
+                if recent.limit(1).count() > 0:
+                    optimized += 1
+            except Exception:
+                unavailable += 1
+        observed = len(candidates) - unavailable
+        missing = max(observed - optimized, 0)
+        if observed <= 0:
+            return unknown_metric_row(metric, "DESCRIBE HISTORY unavailable for large Delta tables", "DESCRIBE HISTORY scan", {"candidate_tables": len(candidates), "history_unavailable": unavailable})
+        notes = f"{missing} of {observed} large Delta tables missing OPTIMIZE; history unavailable for {unavailable}"
+        return metric_row(
+            metric,
+            metric_value_double=float(missing),
+            notes=notes,
+            metric_sql="DESCRIBE HISTORY scan",
+            metric_json={"candidate_tables": len(candidates), "observed_tables": observed, "optimized_tables": optimized, "missing_optimize": missing, "history_unavailable": unavailable},
+        )
+
     raise Exception(f"Unhandled table profile metric: {metric['metric_id']}")
 
 
@@ -738,6 +1021,15 @@ def collect_query_history_metric(metric: dict):
     join_predicate = f"({text_expr} LIKE '% JOIN %')"
     broadcast_predicate = f"({text_expr} LIKE '%BROADCAST%')"
     select_star_predicate = f"({text_expr} LIKE '%SELECT *%')"
+    query_count_sql = f"""
+        SELECT CAST(COUNT(*) AS DOUBLE) AS metric_value
+        FROM {table_name}
+        WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+    """
+    scan_bytes_col = choose_column(table_name, ["total_scan_bytes", "total_bytes", "read_bytes", "total_read_bytes", "bytes_read"])
+    output_bytes_col = choose_column(table_name, ["output_bytes", "result_bytes", "bytes_written"])
+    shuffle_bytes_col = choose_column(table_name, ["shuffle_bytes", "shuffle_read_bytes", "shuffle_write_bytes"])
+    spill_bytes_col = choose_column(table_name, ["spill_bytes", "spill_to_disk_bytes", "spilled_bytes"])
 
     if metric["metric_id"] == "WH-02":
         sql_text = f"""
@@ -828,13 +1120,96 @@ def collect_query_history_metric(metric: dict):
               AND {select_star_predicate}
         """
     elif metric["metric_id"] == "CC-04":
-        duration_predicate = "TRUE" if duration_col is None else f"{duration_col} >= 300000"
+        duration_predicate = "TRUE" if duration_col is None else f"{duration_col} >= {LONG_QUERY_RUNTIME_MS}"
         sql_text = f"""
             SELECT
               CAST(COUNT(*) AS DOUBLE) AS metric_value
             FROM {table_name}
             WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
               AND {duration_predicate}
+        """
+    elif metric["metric_id"] == "CC-14":
+        if duration_col is None:
+            return unknown_metric_row(metric, "system.query.history is missing duration column", query_count_sql, {"table_name": table_name})
+        sql_text = f"""
+            SELECT
+              percentile_approx({duration_col} / 1000.0, 0.95) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {duration_col} IS NOT NULL
+        """
+    elif metric["metric_id"] == "CC-15":
+        if scan_bytes_col is None:
+            return unknown_metric_row(metric, "system.query.history is missing scan-bytes column", query_count_sql, {"table_name": table_name})
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {scan_bytes_col} >= {LARGE_SCAN_BYTES}
+        """
+    elif metric["metric_id"] == "CC-16":
+        if scan_bytes_col is None or output_bytes_col is None:
+            return unknown_metric_row(metric, "system.query.history is missing scan/output byte columns", query_count_sql, {"table_name": table_name})
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {output_bytes_col} > 0
+              AND ({scan_bytes_col} / {output_bytes_col}) >= {HIGH_SCAN_TO_OUTPUT_RATIO}
+        """
+    elif metric["metric_id"] == "CC-17":
+        if spill_bytes_col is None:
+            return unknown_metric_row(metric, "system.query.history is missing spill-bytes column", query_count_sql, {"table_name": table_name})
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {spill_bytes_col} >= {HIGH_SPILL_BYTES}
+        """
+    elif metric["metric_id"] == "CC-18":
+        if shuffle_bytes_col is None:
+            return unknown_metric_row(metric, "system.query.history is missing shuffle-bytes column", query_count_sql, {"table_name": table_name})
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {shuffle_bytes_col} >= {HIGH_SHUFFLE_BYTES}
+        """
+    elif metric["metric_id"] == "CC-19":
+        sql_text = f"""
+            SELECT
+              CASE WHEN COUNT(*) = 0 THEN NULL
+                   ELSE 100.0 * SUM(CASE WHEN {select_star_predicate} THEN 1 ELSE 0 END) / COUNT(*)
+              END AS metric_value,
+              COUNT(*) AS total_queries,
+              SUM(CASE WHEN {select_star_predicate} THEN 1 ELSE 0 END) AS select_star_queries
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+        """
+    elif metric["metric_id"] == "CC-20":
+        sql_text = f"""
+            SELECT
+              CASE WHEN COUNT(*) = 0 THEN NULL
+                   ELSE 100.0 * SUM(CASE WHEN {broadcast_predicate} THEN 1 ELSE 0 END) / COUNT(*)
+              END AS metric_value,
+              COUNT(*) AS total_queries,
+              SUM(CASE WHEN {broadcast_predicate} THEN 1 ELSE 0 END) AS broadcast_queries
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {join_predicate}
+        """
+    elif metric["metric_id"] == "CC-21":
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value,
+              COUNT(*) AS write_workloads
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {write_predicate}
         """
     else:
         raise Exception(f"Unhandled query history metric: {metric['metric_id']}")

@@ -1,6 +1,6 @@
-CREATE OR REPLACE VIEW main.mart.governance_scorecard_metric_daily AS
+CREATE OR REPLACE VIEW main.governance_maturity.governance_scorecard_metric_daily AS
 WITH base AS (
-  SELECT * FROM main.mart.scorecard_dataset_quality_360
+  SELECT * FROM main.governance_maturity.scorecard_dataset_quality_360
 )
 SELECT
   report_date,

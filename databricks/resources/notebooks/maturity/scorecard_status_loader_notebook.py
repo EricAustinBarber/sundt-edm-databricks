@@ -45,18 +45,61 @@ USING DELTA
 PARTITIONED BY (env)
 """)
 
+spark.sql("""
+CREATE TABLE IF NOT EXISTS governance_maturity.warehouse_metric_catalog (
+  metric_id             STRING NOT NULL,
+  dimension             STRING NOT NULL,
+  metric_name           STRING NOT NULL,
+  description           STRING,
+  why_it_matters        STRING,
+  how_to_measure        STRING,
+  improvement_signal    STRING,
+  source_name           STRING,
+  collection_method     STRING,
+  implementation_status STRING,
+  enabled_for_scorecard BOOLEAN,
+  v1_candidate          BOOLEAN,
+  direction             STRING,
+  pass_threshold        DOUBLE,
+  partial_threshold     DOUBLE,
+  threshold_unit        STRING,
+  updated_at            TIMESTAMP NOT NULL
+)
+USING DELTA
+""")
+
 now_ts = spark.sql("SELECT current_timestamp() AS ts").collect()[0]["ts"]
 
-score_thresholds = {
-    "WH-01": {"direction": "high", "pass_value": 10.0, "partial_value": 3.0},
-    "WH-02": {"direction": "high", "pass_value": 5.0, "partial_value": 2.0},
-    "WH-03": {"direction": "high", "pass_value": 100.0, "partial_value": 20.0},
-    "WH-04": {"direction": "high", "pass_value": 95.0, "partial_value": 85.0},
-    "WH-05": {"direction": "low", "pass_value": 60.0, "partial_value": 180.0},
-    "WH-06": {"direction": "low", "pass_value": 10.0, "partial_value": 60.0},
-    "WH-07": {"direction": "high", "pass_value": 95.0, "partial_value": 75.0},
-    "WH-08": {"direction": "high", "pass_value": 80.0, "partial_value": 50.0},
+default_thresholds = {
+    "WH-01": {"direction": "high", "pass_value": 90.0, "partial_value": 75.0},
+    "WH-02": {"direction": "high", "pass_value": 60.0, "partial_value": 35.0},
+    "WH-03": {"direction": "high", "pass_value": 80.0, "partial_value": 50.0},
+    "WH-04": {"direction": "low", "pass_value": 3.0, "partial_value": 10.0},
+    "WH-05": {"direction": "low", "pass_value": 1.0, "partial_value": 5.0},
+    "WH-06": {"direction": "high", "pass_value": 70.0, "partial_value": 40.0},
+    "WH-07": {"direction": "low", "pass_value": 25.0, "partial_value": 75.0},
+    "WH-08": {"direction": "high", "pass_value": 10.0, "partial_value": 3.0},
+    "WH-09": {"direction": "high", "pass_value": 70.0, "partial_value": 40.0},
+    "WH-10": {"direction": "high", "pass_value": 40.0, "partial_value": 15.0},
+    "WH-11": {"direction": "low", "pass_value": 900.0, "partial_value": 1800.0},
+    "WH-12": {"direction": "high", "pass_value": 95.0, "partial_value": 85.0},
 }
+
+
+catalog_rows = (
+    spark.table("governance_maturity.warehouse_metric_catalog")
+    .filter(F.col("enabled_for_scorecard") == F.lit(True))
+    .select("metric_id", "direction", "pass_threshold", "partial_threshold")
+    .collect()
+)
+
+score_thresholds = dict(default_thresholds)
+for row in catalog_rows:
+    score_thresholds[row["metric_id"]] = {
+        "direction": row["direction"] or default_thresholds.get(row["metric_id"], {}).get("direction"),
+        "pass_value": row["pass_threshold"] if row["pass_threshold"] is not None else default_thresholds.get(row["metric_id"], {}).get("pass_value"),
+        "partial_value": row["partial_threshold"] if row["partial_threshold"] is not None else default_thresholds.get(row["metric_id"], {}).get("partial_value"),
+    }
 
 
 def classify_status(check_id: str, metric_value: float | None, status_hint: str | None):

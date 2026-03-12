@@ -56,10 +56,23 @@ class DatabricksPublisher:
         values = [(json.dumps(row, ensure_ascii=True),) for row in rows]
         if not values:
             return
-        cursor.executemany(
-            f"INSERT INTO {full_name} (ingested_at, payload) VALUES (current_timestamp(), ?)",
-            values,
-        )
+        sql_text = f"INSERT INTO {full_name} (ingested_at, payload) VALUES (current_timestamp(), ?)"
+
+        # Databricks SQL enforces a max combined parameter size per statement.
+        max_chars = 900_000
+        batch: list[tuple[str]] = []
+        batch_chars = 0
+        for value in values:
+            payload = value[0]
+            payload_len = len(payload)
+            if batch and (batch_chars + payload_len > max_chars):
+                cursor.executemany(sql_text, batch)
+                batch = []
+                batch_chars = 0
+            batch.append(value)
+            batch_chars += payload_len
+        if batch:
+            cursor.executemany(sql_text, batch)
 
     def publish_json_payloads(
         self,

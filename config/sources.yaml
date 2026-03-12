@@ -33,10 +33,11 @@ alation:
   timeout_seconds: 60
 
 databricks:
-  catalog: "main"
-  schema_raw: "raw"
-  schema_staging: "staging"
+  catalog: "dev"
+  schema_raw: "bronze_governance"
+  schema_staging: "silver_governance"
   table_bigeye_monitors_json: "bigeye_monitors_json"
   table_bigeye_alerts_json: "bigeye_alerts_json"
   table_alation_assets_json: "alation_assets_json"
   table_dataset_quality_seed: "dataset_quality_360_seed"
+

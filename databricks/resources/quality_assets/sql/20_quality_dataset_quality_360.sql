@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW main.mart.scorecard_dataset_quality_360 AS
+CREATE OR REPLACE VIEW main.governance_maturity.scorecard_dataset_quality_360 AS
 WITH monitor_counts AS (
   SELECT
     dataset_name,

@@ -53,5 +53,11 @@ scorecard-bootstrap-deploy config="config/sources.yaml": install
   @cfg="{{config}}"; cfg="${cfg#config=}"; {{venv_python}} -m sundt_edm_quality.cli bootstrap-scorecard --config "$cfg"
   @cfg="{{config}}"; cfg="${cfg#config=}"; {{venv_python}} -m sundt_edm_quality.cli deploy-scorecard --config "$cfg"
 
+ingestion-health config="config/sources.yaml": install
+  @cfg="{{config}}"; cfg="${cfg#config=}"; {{venv_python}} -m sundt_edm_quality.cli ingestion-health --config "$cfg" --json-out artifacts/ingestion-health.json
+
+generate-reports config="config/sources.yaml": install
+  @cfg="{{config}}"; cfg="${cfg#config=}"; {{venv_python}} -m sundt_edm_quality.cli generate-reports --config "$cfg" --refresh-pipeline --deploy-scorecard --output-dir artifacts/reports
+
 compile: install
   @{{venv_python}} -m compileall src

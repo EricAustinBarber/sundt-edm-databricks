@@ -5,8 +5,14 @@
 Run and refresh the Databricks warehouse maturity scorecard from Databricks
 telemetry, store results, and use the latest score for review or CI warnings.
 
+Related documents:
+
+- `docs/databricks-environment-scorecard.md`
+- `docs/warehouse-maturity-model.md`
+
 ## Output Tables
 
+- `governance_maturity.warehouse_metric_catalog`
 - `governance_maturity.warehouse_telemetry_metrics`
 - `governance_maturity.scorecard_definition`
 - `governance_maturity.scorecard_check_status`
@@ -25,6 +31,7 @@ telemetry, store results, and use the latest score for review or CI warnings.
 
 1. Deploy the bundle for the target environment.
 2. Run `maturity_collect` to capture the latest warehouse telemetry snapshot.
+   This also refreshes the deployed metric catalog used by the scorecard.
 3. Run `maturity_scorecard_status_load` to convert telemetry into status rows.
 4. Run `maturity_scorecard_eval` to compute weighted scorecard results.
 5. Review `governance_maturity.scorecard_results` and
@@ -34,6 +41,11 @@ telemetry, store results, and use the latest score for review or CI warnings.
 ## Quick SQL
 
 ```sql
+-- deployed metric catalog
+select metric_id, dimension, metric_name, direction, pass_threshold, partial_threshold, updated_at
+from governance_maturity.warehouse_metric_catalog
+order by metric_id;
+
 -- latest telemetry snapshot
 select collected_at, env, check_id, metric_name, metric_value_double, status_hint, notes
 from governance_maturity.warehouse_telemetry_metrics
@@ -70,5 +82,10 @@ order by collected_at desc, check_id;
 
 - The current scorecard is Databricks-only. Bigeye and Alation are no longer in
   the warehouse maturity scoring path.
+- The current v1 scorecard centers on 12 warehouse metrics covering Delta usage,
+  incremental load patterns, file health, join behavior, and pipeline runtime
+  and success rate.
 - Metrics degrade to `Unknown` when a system table or column is unavailable in a
-  workspace. That preserves the pipeline and surfaces the missing telemetry.
+  workspace. That preserves the pipeline, keeps the bundle deployable, and
+  surfaces the missing telemetry as observed-weight warnings instead of hard
+  score penalties.

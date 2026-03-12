@@ -107,7 +107,9 @@ def classify_status(check_id: str, metric_value: float | None, status_hint: str 
         return "Unknown"
     thresholds = score_thresholds.get(check_id)
     if thresholds is None:
-        return status_hint or "Unknown"
+        if status_hint in ("Pass", "Partial", "Fail", "Unknown"):
+            return status_hint
+        return "Unknown"
     direction = thresholds["direction"]
     pass_value = thresholds["pass_value"]
     partial_value = thresholds["partial_value"]

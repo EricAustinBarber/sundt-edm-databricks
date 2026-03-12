@@ -307,6 +307,173 @@ metric_catalog = [
         "partial_threshold": 85.0,
         "threshold_unit": "percent",
     },
+    {
+        "metric_id": "CC-01",
+        "dimension": "Cost Control",
+        "metric_name": "full_reload_workload_ratio_pct_30d",
+        "description": "Percent of observed write workloads using rebuild-only patterns.",
+        "why_it_matters": "Full reloads on large data sets drive higher compute and longer warehouse runtimes.",
+        "how_to_measure": "Parse recent query history for CREATE OR REPLACE / REPLACE TABLE / TRUNCATE patterns.",
+        "improvement_signal": "Replace rebuild-only logic with incremental MERGE or append patterns.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 20.0,
+        "partial_threshold": 40.0,
+        "threshold_unit": "percent",
+    },
+    {
+        "metric_id": "CC-02",
+        "dimension": "Cost Control",
+        "metric_name": "full_reload_workload_count_30d",
+        "description": "Count of rebuild-only write workloads in the last 30 days.",
+        "why_it_matters": "Frequent rebuilds increase warehouse cost and contention.",
+        "how_to_measure": "Parse recent query history for CREATE OR REPLACE / REPLACE TABLE / TRUNCATE patterns.",
+        "improvement_signal": "Reduce full reload frequency or migrate to incremental processing.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 25.0,
+        "partial_threshold": 75.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-03",
+        "dimension": "Cost Control",
+        "metric_name": "select_star_query_count_30d",
+        "description": "Count of queries using SELECT * patterns over the last 30 days.",
+        "why_it_matters": "SELECT * on large tables increases scan volume and waste.",
+        "how_to_measure": "Parse query history for SELECT * patterns.",
+        "improvement_signal": "Replace SELECT * with projected columns needed by downstream workloads.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 50.0,
+        "partial_threshold": 150.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-04",
+        "dimension": "Cost Control",
+        "metric_name": "long_running_query_count_30d",
+        "description": "Count of queries exceeding the long-run threshold in the last 30 days.",
+        "why_it_matters": "Long-running queries drive sustained compute utilization and cost spikes.",
+        "how_to_measure": "Use query history total duration with a long-run threshold.",
+        "improvement_signal": "Optimize or rewrite long-running queries and improve data layout.",
+        "source_name": "system.query.history",
+        "collection_method": "query_history_sql",
+        "implementation_status": "implemented_proxy",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 50.0,
+        "partial_threshold": 150.0,
+        "threshold_unit": "count",
+    },
+    {
+        "metric_id": "CC-05",
+        "dimension": "Cost Control",
+        "metric_name": "large_table_layout_strategy_coverage_pct",
+        "description": "Alias for WH-03: percent of large tables with a layout strategy.",
+        "why_it_matters": "Poor layout forces larger scans and higher compute cost.",
+        "how_to_measure": "Reuse WH-03 metric from table profiling.",
+        "improvement_signal": "Add partitioning or clustering for large tables.",
+        "source_name": "alias",
+        "collection_method": "alias_metric",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "high",
+        "pass_threshold": 80.0,
+        "partial_threshold": 50.0,
+        "threshold_unit": "percent",
+        "alias_of": "WH-03",
+    },
+    {
+        "metric_id": "CC-06",
+        "dimension": "Cost Control",
+        "metric_name": "small_file_problem_table_count",
+        "description": "Alias for WH-04: count of large tables with small-file issues.",
+        "why_it_matters": "Small files increase planning overhead and I/O cost.",
+        "how_to_measure": "Reuse WH-04 metric from table profiling.",
+        "improvement_signal": "Compact files and adjust write patterns.",
+        "source_name": "alias",
+        "collection_method": "alias_metric",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 3.0,
+        "partial_threshold": 10.0,
+        "threshold_unit": "count",
+        "alias_of": "WH-04",
+    },
+    {
+        "metric_id": "CC-07",
+        "dimension": "Cost Control",
+        "metric_name": "oversized_file_problem_table_count",
+        "description": "Alias for WH-05: count of tables with oversized file patterns.",
+        "why_it_matters": "Oversized files reduce parallelism and increase runtime.",
+        "how_to_measure": "Reuse WH-05 metric from table profiling.",
+        "improvement_signal": "Adjust writer settings or partition strategy.",
+        "source_name": "alias",
+        "collection_method": "alias_metric",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 1.0,
+        "partial_threshold": 5.0,
+        "threshold_unit": "count",
+        "alias_of": "WH-05",
+    },
+    {
+        "metric_id": "CC-08",
+        "dimension": "Cost Control",
+        "metric_name": "large_join_query_count_30d",
+        "description": "Alias for WH-07: count of long-running join queries.",
+        "why_it_matters": "Large joins drive shuffle and compute cost.",
+        "how_to_measure": "Reuse WH-07 metric from query history.",
+        "improvement_signal": "Reduce large joins through layout and modeling.",
+        "source_name": "alias",
+        "collection_method": "alias_metric",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 25.0,
+        "partial_threshold": 75.0,
+        "threshold_unit": "count",
+        "alias_of": "WH-07",
+    },
+    {
+        "metric_id": "CC-09",
+        "dimension": "Cost Control",
+        "metric_name": "critical_pipeline_p95_runtime_seconds_30d",
+        "description": "Alias for WH-11: p95 pipeline runtime.",
+        "why_it_matters": "Long runtimes drive compute cost and cluster time.",
+        "how_to_measure": "Reuse WH-11 metric from job run telemetry.",
+        "improvement_signal": "Optimize or split long-running jobs.",
+        "source_name": "alias",
+        "collection_method": "alias_metric",
+        "implementation_status": "implemented",
+        "enabled_for_scorecard": False,
+        "v1_candidate": False,
+        "direction": "low",
+        "pass_threshold": 900.0,
+        "partial_threshold": 1800.0,
+        "threshold_unit": "seconds",
+        "alias_of": "WH-11",
+    },
 ]
 
 
@@ -570,6 +737,7 @@ def collect_query_history_metric(metric: dict):
         OR {text_expr} LIKE '%AUTO LOADER%')"""
     join_predicate = f"({text_expr} LIKE '% JOIN %')"
     broadcast_predicate = f"({text_expr} LIKE '%BROADCAST%')"
+    select_star_predicate = f"({text_expr} LIKE '%SELECT *%')"
 
     if metric["metric_id"] == "WH-02":
         sql_text = f"""
@@ -628,6 +796,45 @@ def collect_query_history_metric(metric: dict):
             FROM {table_name}
             WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
               AND {write_predicate}
+        """
+    elif metric["metric_id"] == "CC-01":
+        sql_text = f"""
+            SELECT
+              CASE WHEN COUNT(*) = 0 THEN NULL
+                   ELSE 100.0 * SUM(CASE WHEN {rebuild_predicate} THEN 1 ELSE 0 END) / COUNT(*)
+              END AS metric_value,
+              COUNT(*) AS relevant_workloads,
+              SUM(CASE WHEN {rebuild_predicate} THEN 1 ELSE 0 END) AS rebuild_workloads
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {write_predicate}
+        """
+    elif metric["metric_id"] == "CC-02":
+        sql_text = f"""
+            SELECT
+              CAST(SUM(CASE WHEN {rebuild_predicate} THEN 1 ELSE 0 END) AS DOUBLE) AS metric_value,
+              COUNT(*) AS relevant_workloads,
+              SUM(CASE WHEN {rebuild_predicate} THEN 1 ELSE 0 END) AS rebuild_workloads
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {write_predicate}
+        """
+    elif metric["metric_id"] == "CC-03":
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {select_star_predicate}
+        """
+    elif metric["metric_id"] == "CC-04":
+        duration_predicate = "TRUE" if duration_col is None else f"{duration_col} >= 300000"
+        sql_text = f"""
+            SELECT
+              CAST(COUNT(*) AS DOUBLE) AS metric_value
+            FROM {table_name}
+            WHERE {start_col} >= current_timestamp() - INTERVAL 30 DAYS
+              AND {duration_predicate}
         """
     else:
         raise Exception(f"Unhandled query history metric: {metric['metric_id']}")
@@ -729,18 +936,43 @@ catalog_df = align_to_table_schema(catalog_df, "governance_maturity.warehouse_me
 catalog_df.write.mode("overwrite").format("delta").saveAsTable("governance_maturity.warehouse_metric_catalog")
 
 rows = []
+row_by_id = {}
+alias_metrics = []
 for metric in metric_catalog:
+    if metric.get("collection_method") == "alias_metric":
+        alias_metrics.append(metric)
+        continue
     try:
         if metric["collection_method"] in ("table_profile_scan", "table_history_scan"):
-            rows.append(collect_table_profile_metric(metric))
+            row = collect_table_profile_metric(metric)
         elif metric["collection_method"] == "query_history_sql":
-            rows.append(collect_query_history_metric(metric))
+            row = collect_query_history_metric(metric)
         elif metric["collection_method"] == "job_run_sql":
-            rows.append(collect_job_metric(metric))
+            row = collect_job_metric(metric)
         else:
-            rows.append(unknown_metric_row(metric, f"Unsupported collection method: {metric['collection_method']}"))
+            row = unknown_metric_row(metric, f"Unsupported collection method: {metric['collection_method']}")
     except Exception as exc:
-        rows.append(unknown_metric_row(metric, str(exc), metric_json={"metric_id": metric["metric_id"]}))
+        row = unknown_metric_row(metric, str(exc), metric_json={"metric_id": metric["metric_id"]})
+    rows.append(row)
+    row_by_id[metric["metric_id"]] = row
+
+for metric in alias_metrics:
+    alias_of = metric.get("alias_of")
+    base_row = row_by_id.get(alias_of)
+    if not base_row:
+        rows.append(unknown_metric_row(metric, f"Alias source not available: {alias_of}", metric_json={"alias_of": alias_of}))
+        continue
+    rows.append(
+        metric_row(
+            metric,
+            metric_value_double=base_row[9],
+            metric_value_string=base_row[10],
+            status_hint=base_row[11],
+            notes=f"alias_of={alias_of}; {base_row[12] or 'no base notes'}",
+            metric_sql=None,
+            metric_json={"alias_of": alias_of, "base_metric": alias_of},
+        )
+    )
 
 metrics_df = spark.createDataFrame(
     rows,

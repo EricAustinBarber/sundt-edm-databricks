@@ -17,6 +17,7 @@ WORKFLOW_RUN_ID = dbutils.widgets.get("workflow_run_id") or None
 BUNDLE_NAME = dbutils.widgets.get("bundle_name") or "unknown"
 
 import json
+from decimal import Decimal
 from pyspark.sql import functions as F
 
 LARGE_TABLE_BYTES = 10 * 1024 * 1024 * 1024
@@ -360,7 +361,7 @@ def metric_row(metric: dict, *, metric_value_double=None, metric_value_string=No
         status_hint,
         notes,
         metric_sql,
-        json.dumps(metric_json or {}, sort_keys=True),
+        json.dumps(_json_safe(metric_json or {}), sort_keys=True),
     )
 
 
@@ -376,6 +377,18 @@ def unknown_metric_row(metric: dict, notes: str, metric_sql=None, metric_json=No
 
 def safe_collect_one(sql_text: str):
     return spark.sql(sql_text).collect()[0]
+
+
+def _json_safe(value):
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, dict):
+        return {str(key): _json_safe(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+    if hasattr(value, "asDict"):
+        return _json_safe(value.asDict(recursive=True))
+    return value
 
 
 table_profiles_cache = None

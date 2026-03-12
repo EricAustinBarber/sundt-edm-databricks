@@ -14,9 +14,9 @@ variables:
   quality_catalog:
     default: dev
   quality_schema_bronze:
-    default: bronze
+    default: bronze_governance
   quality_schema_silver:
-    default: silver
+    default: silver_governance
   quality_schema_governance:
     default: governance_maturity
 
@@ -29,24 +29,24 @@ targets:
     default: true
     variables:
       quality_catalog: dev
-      quality_schema_bronze: bronze
-      quality_schema_silver: silver
+      quality_schema_bronze: bronze_governance
+      quality_schema_silver: silver_governance
       quality_schema_governance: governance_maturity
     workspace:
       root_path: /Workspace/Shared/sundt-edm-maturity/dev/${bundle.name}
   test:
     variables:
       quality_catalog: test
-      quality_schema_bronze: bronze
-      quality_schema_silver: silver
+      quality_schema_bronze: bronze_governance
+      quality_schema_silver: silver_governance
       quality_schema_governance: governance_maturity
     workspace:
       root_path: /Workspace/Shared/sundt-edm-maturity/test/${bundle.name}
   prod:
     variables:
       quality_catalog: prod
-      quality_schema_bronze: bronze
-      quality_schema_silver: silver
+      quality_schema_bronze: bronze_governance
+      quality_schema_silver: silver_governance
       quality_schema_governance: governance_maturity
     workspace:
       root_path: /Workspace/Shared/sundt-edm-maturity/prod/${bundle.name}

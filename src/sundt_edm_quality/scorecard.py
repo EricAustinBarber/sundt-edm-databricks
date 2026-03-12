@@ -21,6 +21,14 @@ def _load_sql_files(sql_dir: str) -> list[tuple[str, str]]:
     return [(f.name, f.read_text(encoding="utf-8")) for f in files]
 
 
+def _rewrite_sql_catalogs(sql_text: str, catalog: str, schema_raw: str, schema_staging: str) -> str:
+    rewritten = sql_text
+    rewritten = rewritten.replace("main.raw.", f"{catalog}.{schema_raw}.")
+    rewritten = rewritten.replace("main.staging.", f"{catalog}.{schema_staging}.")
+    rewritten = rewritten.replace("main.mart.", f"{catalog}.mart.")
+    return rewritten
+
+
 def _definition_rows(path: str, key: str) -> list[dict[str, Any]]:
     payload = _load_yaml(path)
     rows = payload.get(key, [])
@@ -40,7 +48,18 @@ def deploy_scorecard(
 ) -> dict[str, int]:
     metric_rows = _definition_rows(metrics_yaml_path, "metrics")
     dataset_rows = _definition_rows(critical_datasets_yaml_path, "datasets")
-    sql_files = _load_sql_files(sql_dir)
+    sql_files = [
+        (
+            name,
+            _rewrite_sql_catalogs(
+                sql_text,
+                catalog=cfg.databricks.catalog,
+                schema_raw=cfg.databricks.schema_raw,
+                schema_staging=cfg.databricks.schema_staging,
+            ),
+        )
+        for name, sql_text in _load_sql_files(sql_dir)
+    ]
 
     publisher = DatabricksPublisher(
         cfg=cfg.databricks,
@@ -49,10 +68,9 @@ def deploy_scorecard(
         access_token=databricks_access_token,
     )
 
-    # Create schemas/views first so fresh environments are provisioned.
-    publisher.execute_sql_files(sql_files)
-
+    # Ensure raw/staging/mart objects exist before creating dependent views.
     publisher.ensure_scorecard_definition_tables()
+    publisher.execute_sql_files(sql_files)
     publisher.replace_json_rows(
         schema=cfg.databricks.schema_staging,
         table="sliver_scorecard_metric_definitions_json",

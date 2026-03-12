@@ -38,15 +38,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install -r requirements.txt -r requirements.dev.txt
       - name: Run tests
         env:
           PYTHONPATH: ${{ github.workspace }}
@@ -60,7 +60,7 @@ jobs:
     environment: DataBricks-Dev
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.277.0
         with:
@@ -80,7 +80,7 @@ jobs:
     environment: DataBricks-Test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.277.0
         with:
@@ -100,7 +100,7 @@ jobs:
     environment: DataBricks-Prod
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.277.0
         with:
@@ -278,7 +278,7 @@ jobs:
     environment: DataBricks-Prod
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.277.0
         with:

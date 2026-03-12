@@ -44,7 +44,7 @@ def _rewrite_catalog_and_schemas(sql_text: str) -> str:
     rewritten = sql_text
     rewritten = rewritten.replace("main.raw.", f"{CATALOG}.{SCHEMA_BRONZE}.")
     rewritten = rewritten.replace("main.staging.", f"{CATALOG}.{SCHEMA_SILVER}.")
-    rewritten = rewritten.replace("main.mart.", f"{CATALOG}.{SCHEMA_GOVERNANCE}.")
+    rewritten = rewritten.replace("main.governance_maturity.", f"{CATALOG}.{SCHEMA_GOVERNANCE}.")
     return rewritten
 
 

@@ -82,67 +82,99 @@ PARTITIONED BY (env)
 embedded_definitions = [
     {
         "check_id": "WH-01",
-        "dimension": "Adoption",
-        "check_name": "Warehouse queried on at least ten distinct days in the last 30 days",
-        "weight": 12,
-        "pass_criteria": "Distinct query days in 30 days >= 10",
-        "evidence_source": "system.query.history",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Curated warehouse tables are primarily stored in Delta format",
+        "weight": 10,
+        "pass_criteria": "Delta curated table coverage >= 90%",
+        "evidence_source": "system.information_schema.tables + DESCRIBE DETAIL",
     },
     {
         "check_id": "WH-02",
-        "dimension": "Adoption",
-        "check_name": "Warehouse used by multiple distinct query users in the last 30 days",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Observed warehouse write workloads favor MERGE over rebuild-only logic",
         "weight": 10,
-        "pass_criteria": "Distinct users in 30 days >= 5",
+        "pass_criteria": "MERGE load ratio >= 60%",
         "evidence_source": "system.query.history",
     },
     {
         "check_id": "WH-03",
-        "dimension": "Utilization",
-        "check_name": "Warehouse handled meaningful successful query volume in the last 30 days",
-        "weight": 10,
-        "pass_criteria": "Successful queries in 30 days >= 100",
-        "evidence_source": "system.query.history",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Large tables use a layout strategy such as partitioning",
+        "weight": 8,
+        "pass_criteria": "Large table layout strategy coverage >= 80%",
+        "evidence_source": "system.information_schema.tables + DESCRIBE DETAIL",
     },
     {
         "check_id": "WH-04",
-        "dimension": "Reliability",
-        "check_name": "Warehouse query success rate remains above the reliability threshold",
-        "weight": 14,
-        "pass_criteria": "Successful query rate in 30 days >= 95%",
-        "evidence_source": "system.query.history",
+        "dimension": "Performance and Efficiency",
+        "check_name": "Only a small number of large tables show small-file issues",
+        "weight": 8,
+        "pass_criteria": "Small-file problem tables <= 3",
+        "evidence_source": "DESCRIBE DETAIL",
     },
     {
         "check_id": "WH-05",
-        "dimension": "Performance",
-        "check_name": "Warehouse p95 runtime remains within acceptable bounds",
-        "weight": 14,
-        "pass_criteria": "P95 total runtime <= 60 seconds",
-        "evidence_source": "system.query.history",
+        "dimension": "Performance and Efficiency",
+        "check_name": "Only a limited number of tables show oversized file patterns",
+        "weight": 6,
+        "pass_criteria": "Oversized-file problem tables <= 1",
+        "evidence_source": "DESCRIBE DETAIL",
     },
     {
         "check_id": "WH-06",
-        "dimension": "Performance",
-        "check_name": "Warehouse p95 wait-for-compute time remains within acceptable bounds",
-        "weight": 12,
-        "pass_criteria": "P95 wait for compute <= 10 seconds",
-        "evidence_source": "system.query.history",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Large Delta tables show recent OPTIMIZE usage",
+        "weight": 8,
+        "pass_criteria": "Large table OPTIMIZE coverage >= 70%",
+        "evidence_source": "DESCRIBE HISTORY",
     },
     {
         "check_id": "WH-07",
-        "dimension": "Governance",
-        "check_name": "Managed table coverage demonstrates strong warehouse governance",
-        "weight": 14,
-        "pass_criteria": "Managed table coverage >= 95%",
-        "evidence_source": "system.information_schema.tables",
+        "dimension": "Performance and Efficiency",
+        "check_name": "Large join workloads remain limited",
+        "weight": 8,
+        "pass_criteria": "Large join query count <= 25",
+        "evidence_source": "system.query.history",
     },
     {
         "check_id": "WH-08",
-        "dimension": "Governance",
-        "check_name": "Table comment coverage demonstrates documented warehouse assets",
-        "weight": 14,
-        "pass_criteria": "Comment coverage >= 80%",
-        "evidence_source": "system.information_schema.tables",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Broadcast join hints are used where appropriate",
+        "weight": 6,
+        "pass_criteria": "Broadcast join hint count >= 10",
+        "evidence_source": "system.query.history",
+    },
+    {
+        "check_id": "WH-09",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Observed write workloads are primarily incremental",
+        "weight": 10,
+        "pass_criteria": "Incremental load coverage >= 70%",
+        "evidence_source": "system.query.history",
+    },
+    {
+        "check_id": "WH-10",
+        "dimension": "Platform Feature Utilization",
+        "check_name": "Observed ingestion workloads use auto-trigger or streaming patterns",
+        "weight": 8,
+        "pass_criteria": "Auto-trigger or streaming load coverage >= 40%",
+        "evidence_source": "system.query.history",
+    },
+    {
+        "check_id": "WH-11",
+        "dimension": "Performance and Efficiency",
+        "check_name": "Critical pipeline p95 runtime remains within the target window",
+        "weight": 9,
+        "pass_criteria": "P95 pipeline runtime <= 900 seconds",
+        "evidence_source": "system.lakeflow.job_run_timeline",
+    },
+    {
+        "check_id": "WH-12",
+        "dimension": "Operational Reliability",
+        "check_name": "Observed pipeline success rate remains above the reliability threshold",
+        "weight": 9,
+        "pass_criteria": "Pipeline success rate >= 95%",
+        "evidence_source": "system.lakeflow.job_run_timeline",
     },
 ]
 
@@ -264,13 +296,18 @@ def status_score(col):
 scored = (
     joined.withColumn("score", status_score("status_norm"))
     .withColumn("weighted_score", F.col("score") * F.col("weight"))
+    .withColumn(
+        "available_weight",
+        F.when(F.col("status_norm") == "Unknown", F.lit(0.0)).otherwise(F.col("weight").cast("double")),
+    )
 )
 
 print("[scorecard] dimension summary:")
 (
     scored.groupBy("dimension")
     .agg(
-        F.sum("weighted_score").alias("dimension_score"),
+        F.sum("weighted_score").alias("dimension_weighted_score"),
+        F.sum("available_weight").alias("dimension_available_weight"),
         F.sum("weight").alias("dimension_weight"),
         F.sum(F.when(F.col("status_norm") == "Pass", F.lit(1)).otherwise(F.lit(0))).alias("pass_count"),
         F.sum(F.when(F.col("status_norm") == "Partial", F.lit(1)).otherwise(F.lit(0))).alias("partial_count"),
@@ -281,21 +318,28 @@ print("[scorecard] dimension summary:")
     .show(50, False)
 )
 
-total_score = scored.agg(F.sum("weighted_score").alias("total")).collect()[0]["total"] or 0.0
+score_totals = scored.agg(
+    F.sum("weighted_score").alias("weighted_total"),
+    F.sum("available_weight").alias("available_weight_total"),
+).collect()[0]
+weighted_total = score_totals["weighted_total"] or 0.0
+available_weight_total = score_totals["available_weight_total"] or 0.0
+total_score = 0.0 if float(available_weight_total) <= 0.0 else 100.0 * float(weighted_total) / float(available_weight_total)
 
-governance_fail = scored.filter((F.col("dimension") == "Governance") & (F.col("status_norm") == "Fail")).count() > 0
-reliability_fail = scored.filter((F.col("dimension") == "Reliability") & (F.col("status_norm") == "Fail")).count() > 0
+reliability_fail = scored.filter((F.col("dimension") == "Operational Reliability") & (F.col("status_norm") == "Fail")).count() > 0
 
 blocked = []
 warned = []
-if governance_fail:
-    blocked.append("Governance metric failed")
 if reliability_fail:
-    blocked.append("Reliability metric failed")
+    blocked.append("Operational reliability metric failed")
 
 unknown_count = scored.filter(F.col("status_norm") == "Unknown").count()
 if unknown_count > 0:
     warned.append(f"{unknown_count} checks missing telemetry")
+if float(available_weight_total) < 100.0:
+    warned.append(f"Score normalized over {round(float(available_weight_total), 1)} observed weight")
+if float(available_weight_total) <= 0.0:
+    warned.append("No observed warehouse telemetry metrics were available for scoring")
 if total_score < 75.0:
     warned.append(f"Total score below target: {round(float(total_score), 2)}")
 
@@ -319,6 +363,8 @@ details_json = (
                 F.collect_list("check").alias("checks"),
                 F.lit(SCORECARD_SOURCE).alias("scorecard_source"),
                 F.lit(SCORECARD_PATH).alias("scorecard_path"),
+                F.lit(float(available_weight_total)).alias("available_weight_total"),
+                F.lit(float(weighted_total)).alias("weighted_total"),
             )
         ).alias("details_json")
     )

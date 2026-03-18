@@ -82,9 +82,9 @@ order by collected_at desc, check_id;
 
 - The current scorecard is Databricks-only. Bigeye and Alation are no longer in
   the warehouse maturity scoring path.
-- The current v1 scorecard centers on 12 warehouse metrics covering Delta usage,
-  incremental load patterns, file health, join behavior, and pipeline runtime
-  and success rate.
+- The current scorecard covers 24 warehouse maturity metrics plus 21 cost-control
+  signals spanning Delta usage, pipeline patterns, file layout health, join
+  behavior, and operational reliability.
 - Metrics degrade to `Unknown` when a system table or column is unavailable in a
   workspace. That preserves the pipeline, keeps the bundle deployable, and
   surfaces the missing telemetry as observed-weight warnings instead of hard

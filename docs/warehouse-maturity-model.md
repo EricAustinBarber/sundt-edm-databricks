@@ -116,16 +116,16 @@ rollups.
 
 ## Current Implemented Metrics
 
-| Check ID | Dimension | Metric | Source | Pass Threshold |
-|---|---|---|---|---|
-| WH-01 | Adoption | Active query days in last 30 days | `system.query.history` | `>= 10` |
-| WH-02 | Adoption | Distinct query users in last 30 days | `system.query.history` | `>= 5` |
-| WH-03 | Utilization | Successful queries in last 30 days | `system.query.history` | `>= 100` |
-| WH-04 | Reliability | Successful query rate in last 30 days | `system.query.history` | `>= 95%` |
-| WH-05 | Performance | P95 runtime in last 30 days | `system.query.history` | `<= 60 seconds` |
-| WH-06 | Performance | P95 wait for compute in last 30 days | `system.query.history` | `<= 10 seconds` |
-| WH-07 | Governance | Managed table coverage | `system.information_schema.tables` | `>= 95%` |
-| WH-08 | Governance | Table comment coverage | `system.information_schema.tables` | `>= 80%` |
+The authoritative, deployed scorecard definition is maintained in
+`docs/databricks-environment-scorecard.md`.
+
+As of the current scorecard definition, the implementation includes:
+
+- `WH-01` through `WH-24` (Platform Feature Utilization, Performance and Efficiency, Operational Reliability)
+- `CC-01` through `CC-21` (Cost Control)
+
+Use the scorecard definition document for exact check names, thresholds, and
+weights.
 
 ## Current Scoring Model
 
@@ -354,6 +354,9 @@ Current implementation lives in:
 
 ## Change Log
 
+- `2026-03-18`: Added operational reliability and performance telemetry checks
+  (WH-13 through WH-24) covering retry/failure recovery, join patterns, very
+  large scans, file size health, file growth, and compaction candidates.
 - `2026-03-11`: Initial Databricks-only warehouse maturity model documented and
   aligned to telemetry-backed `WH-*` scorecard checks.
 - `2026-03-11`: Expanded with a warehouse engineering metrics backlog and a
